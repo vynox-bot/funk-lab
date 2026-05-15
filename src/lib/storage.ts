@@ -49,7 +49,7 @@ async function uploadToSupabase(
         "Content-Type": contentType,
         "x-upsert": "true",
       },
-      body: buffer,
+      body: new Uint8Array(buffer),
     }
   );
 
