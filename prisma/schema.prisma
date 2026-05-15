@@ -16,6 +16,9 @@ model User {
   image         String?
   password      String?
   bio           String?
+  website       String?
+  twitter       String?
+  instagram     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -115,11 +118,14 @@ model Comment {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
+  parentId  String?
 
   userId  String
   trackId String
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  track   Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track   Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  parent  Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReplies")
 }
 
 model PasswordResetToken {

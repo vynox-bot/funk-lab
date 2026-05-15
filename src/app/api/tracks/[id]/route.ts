@@ -16,7 +16,14 @@ export async function GET(
       _count: { select: { likes: true, comments: true, ratings: true } },
       likes: session?.user?.id ? { where: { userId: session.user.id } } : false,
       comments: {
-        include: { user: { select: { id: true, name: true } } },
+        where: { parentId: null },
+        include: {
+          user: { select: { id: true, name: true } },
+          replies: {
+            include: { user: { select: { id: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          },
+        },
         orderBy: { createdAt: "desc" },
       },
       ratings: {

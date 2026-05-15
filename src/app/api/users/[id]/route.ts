@@ -14,6 +14,10 @@ export async function GET(
       id: true,
       name: true,
       bio: true,
+      website: true,
+      twitter: true,
+      instagram: true,
+      image: true,
       createdAt: true,
       _count: { select: { tracks: true, likes: true } },
     },
@@ -37,18 +41,26 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, bio } = await req.json();
+  const { name, bio, website, twitter, instagram, image } = await req.json();
 
-  const sanitizedName = name ? String(name).slice(0, 50).replace(/[<>]/g, "") : undefined;
-  const sanitizedBio = bio ? String(bio).slice(0, 500).replace(/[<>]/g, "") : undefined;
+  const clean = (v: unknown, max: number) =>
+    v && typeof v === "string" ? String(v).slice(0, max).replace(/[<>]/g, "") : undefined;
+
+  const sanitizedWebsite = website && typeof website === "string"
+    ? website.slice(0, 200).replace(/[<> "']/g, "")
+    : undefined;
 
   const user = await prisma.user.update({
     where: { id },
     data: {
-      ...(sanitizedName ? { name: sanitizedName } : {}),
-      ...(sanitizedBio !== undefined ? { bio: sanitizedBio } : {}),
+      ...(clean(name, 50) ? { name: clean(name, 50) } : {}),
+      bio: clean(bio, 500) ?? null,
+      website: sanitizedWebsite ?? null,
+      twitter: clean(twitter, 50) ?? null,
+      instagram: clean(instagram, 50) ?? null,
+      image: clean(image, 500) ?? null,
     },
-    select: { id: true, name: true, bio: true },
+    select: { id: true, name: true, bio: true, website: true, twitter: true, instagram: true, image: true },
   });
 
   return NextResponse.json(user);

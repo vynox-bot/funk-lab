@@ -12,7 +12,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { content } = await req.json();
+  const { content, parentId } = await req.json();
   if (!content || typeof content !== "string" || content.trim().length === 0) {
     return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
   }
@@ -20,8 +20,11 @@ export async function POST(
   const sanitized = content.slice(0, 500).replace(/[<>]/g, "");
 
   const comment = await prisma.comment.create({
-    data: { content: sanitized, userId: session.user.id, trackId: id },
-    include: { user: { select: { id: true, name: true } } },
+    data: { content: sanitized, userId: session.user.id, trackId: id, parentId: parentId ?? null },
+    include: {
+      user: { select: { id: true, name: true } },
+      replies: { include: { user: { select: { id: true, name: true } } } },
+    },
   });
 
   return NextResponse.json(comment, { status: 201 });

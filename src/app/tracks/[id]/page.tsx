@@ -21,11 +21,19 @@ interface RatingEntry {
   user: { id: string; name: string | null };
 }
 
+interface Reply {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: { id: string; name: string | null };
+}
+
 interface Comment {
   id: string;
   content: string;
   createdAt: string;
   user: { id: string; name: string | null };
+  replies?: Reply[];
 }
 
 interface Track {
@@ -105,11 +113,18 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
   const [hasRated, setHasRated] = useState(false);
   const [ratingSuccess, setRatingSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [showSharedModal, setShowSharedModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [trackId, setTrackId] = useState<string | null>(null);
 
   useEffect(() => {
     params.then(({ id }) => setTrackId(id));
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("shared") === "1") {
+      setShowSharedModal(true);
+    }
   }, [params]);
 
   useEffect(() => {
@@ -184,10 +199,32 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const url = `${window.location.origin}${window.location.pathname}?shared=1`;
+    navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleReply = async (parentId: string) => {
+    if (!session || !replyContent.trim()) return;
+    setSubmittingReply(true);
+    const res = await fetch(`/api/tracks/${trackId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: replyContent.trim(), parentId }),
+    });
+    const data = await res.json();
+    setSubmittingReply(false);
+    if (res.ok) {
+      setComments(comments.map((c) =>
+        c.id === parentId
+          ? { ...c, replies: [...(c.replies ?? []), data] }
+          : c
+      ));
+      setReplyContent("");
+      setReplyingTo(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -216,6 +253,24 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
+      {/* Shared-link modal */}
+      {showSharedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <p className="text-4xl mb-3">🎵</p>
+            <h2 className="text-xl font-black text-white mb-2">Someone shared this with you</h2>
+            <p className="text-zinc-400 text-sm mb-1">{track.title}</p>
+            <p className="text-zinc-600 text-xs mb-6">by {track.user.name ?? "Unknown Artist"}</p>
+            <button
+              onClick={() => setShowSharedModal(false)}
+              className="w-full py-3 bg-[var(--funk-yellow)] text-black font-bold rounded-xl hover:brightness-110 transition-all"
+            >
+              Check it out ↓
+            </button>
+          </div>
+        </div>
+      )}
+
       <Link href="/discover" className="text-zinc-500 hover:text-[var(--funk-yellow)] text-sm transition-colors">
         ← Discover
       </Link>
@@ -404,19 +459,73 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
 
               <div className="flex flex-col gap-4">
                 {comments.map((c) => (
-                  <div key={c.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-xs font-black text-[var(--funk-yellow)] flex-shrink-0">
-                      {(c.user.name ?? "?")[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <Link href={`/profile/${c.user.id}`} className="text-sm font-semibold text-white hover:text-[var(--funk-yellow)] transition-colors">
-                          {c.user.name ?? "Anonymous"}
-                        </Link>
-                        <span className="text-xs text-zinc-600">{new Date(c.createdAt).toLocaleDateString()}</span>
+                  <div key={c.id}>
+                    {/* Top-level comment */}
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-xs font-black text-[var(--funk-yellow)] flex-shrink-0">
+                        {(c.user.name ?? "?")[0].toUpperCase()}
                       </div>
-                      <p className="text-sm text-zinc-300">{c.content}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <Link href={`/profile/${c.user.id}`} className="text-sm font-semibold text-white hover:text-[var(--funk-yellow)] transition-colors">
+                            {c.user.name ?? "Anonymous"}
+                          </Link>
+                          <span className="text-xs text-zinc-600">{new Date(c.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-zinc-300">{c.content}</p>
+                        {session && (
+                          <button
+                            onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyContent(""); }}
+                            className="mt-1 text-xs text-zinc-500 hover:text-[var(--funk-yellow)] transition-colors"
+                          >
+                            {replyingTo === c.id ? "Cancel" : "Reply"}
+                          </button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Replies */}
+                    {(c.replies?.length ?? 0) > 0 && (
+                      <div className="ml-11 mt-3 flex flex-col gap-3 border-l-2 border-[var(--funk-border)] pl-4">
+                        {c.replies!.map((r) => (
+                          <div key={r.id} className="flex gap-3">
+                            <div className="w-6 h-6 rounded-full bg-[var(--funk-orange)]/20 flex items-center justify-center text-xs font-black text-[var(--funk-orange)] flex-shrink-0">
+                              {(r.user.name ?? "?")[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <Link href={`/profile/${r.user.id}`} className="text-xs font-semibold text-white hover:text-[var(--funk-yellow)] transition-colors">
+                                  {r.user.name ?? "Anonymous"}
+                                </Link>
+                                <span className="text-xs text-zinc-600">{new Date(r.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-sm text-zinc-300">{r.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reply form */}
+                    {replyingTo === c.id && (
+                      <div className="ml-11 mt-2 flex gap-2">
+                        <input
+                          type="text"
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          placeholder="Write a reply…"
+                          maxLength={500}
+                          className="flex-1 bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-3 py-2 text-white placeholder-zinc-600 focus:border-[var(--funk-yellow)] outline-none text-sm transition-colors"
+                        />
+                        <button
+                          onClick={() => handleReply(c.id)}
+                          disabled={submittingReply || !replyContent.trim()}
+                          className="px-4 py-2 bg-[var(--funk-yellow)] text-black font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
+                        >
+                          Reply
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

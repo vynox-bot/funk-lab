@@ -9,6 +9,10 @@ interface UserProfile {
   id: string;
   name: string | null;
   bio: string | null;
+  website: string | null;
+  twitter: string | null;
+  instagram: string | null;
+  image: string | null;
   createdAt: string;
   _count: { tracks: number; likes: number };
 }
@@ -19,7 +23,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tracks, setTracks] = useState<TrackData[]>([]);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", bio: "" });
+  const [editForm, setEditForm] = useState({ name: "", bio: "", website: "", twitter: "", instagram: "", image: "" });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +38,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       fetch(`/api/tracks?userId=${userId}&limit=20`).then((r) => r.json()),
     ]).then(([user, trackData]) => {
       setProfile(user);
-      setEditForm({ name: user.name ?? "", bio: user.bio ?? "" });
+      setEditForm({ name: user.name ?? "", bio: user.bio ?? "", website: user.website ?? "", twitter: user.twitter ?? "", instagram: user.instagram ?? "", image: user.image ?? "" });
       setTracks(trackData.tracks);
       setLoading(false);
     });
@@ -50,7 +54,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     });
     if (res.ok) {
       const data = await res.json();
-      setProfile((prev) => prev ? { ...prev, name: data.name, bio: data.bio } : prev);
+      setProfile((prev) => prev ? { ...prev, name: data.name, bio: data.bio, website: data.website, twitter: data.twitter, instagram: data.instagram, image: data.image } : prev);
       setEditing(false);
     }
     setSaving(false);
@@ -80,8 +84,15 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-8 mb-10">
         <div className="flex items-start gap-6">
           {/* Avatar */}
-          <div className="w-20 h-20 rounded-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-3xl font-black text-[var(--funk-yellow)] flex-shrink-0">
-            {(profile.name ?? "?")[0].toUpperCase()}
+          <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
+            {profile.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.image} alt={profile.name ?? "Avatar"} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-3xl font-black text-[var(--funk-yellow)]">
+                {(profile.name ?? "?")[0].toUpperCase()}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -102,6 +113,38 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
                   className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none resize-none text-sm"
                   placeholder="Tell the community about yourself…"
+                />
+                <input
+                  type="url"
+                  value={editForm.image}
+                  maxLength={500}
+                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+                  className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none text-sm"
+                  placeholder="Profile picture URL (https://…)"
+                />
+                <input
+                  type="url"
+                  value={editForm.website}
+                  maxLength={200}
+                  onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                  className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none text-sm"
+                  placeholder="Website (https://…)"
+                />
+                <input
+                  type="text"
+                  value={editForm.twitter}
+                  maxLength={50}
+                  onChange={(e) => setEditForm({ ...editForm, twitter: e.target.value })}
+                  className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none text-sm"
+                  placeholder="Twitter / X handle (without @)"
+                />
+                <input
+                  type="text"
+                  value={editForm.instagram}
+                  maxLength={50}
+                  onChange={(e) => setEditForm({ ...editForm, instagram: e.target.value })}
+                  className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none text-sm"
+                  placeholder="Instagram handle (without @)"
                 />
                 <div className="flex gap-2">
                   <button
@@ -137,6 +180,26 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 {profile.bio && (
                   <p className="text-zinc-400 text-sm mt-2 leading-relaxed">{profile.bio}</p>
                 )}
+                {/* Social links */}
+                {(profile.website || profile.twitter || profile.instagram) && (
+                  <div className="flex flex-wrap gap-3 mt-3">
+                    {profile.website && (
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors flex items-center gap-1">
+                        🌐 {profile.website.replace(/^https?:\/\//, "")}
+                      </a>
+                    )}
+                    {profile.twitter && (
+                      <a href={`https://twitter.com/${profile.twitter}`} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">
+                        𝕏 @{profile.twitter}
+                      </a>
+                    )}
+                    {profile.instagram && (
+                      <a href={`https://instagram.com/${profile.instagram}`} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">
+                        📷 @{profile.instagram}
+                      </a>
+                    )}
+                  </div>
+                )}
               </>
             )}
 
@@ -144,7 +207,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             <div className="flex gap-6 mt-4 text-sm">
               <div>
                 <span className="font-black text-white">{profile._count.tracks}</span>
-                <span className="text-zinc-500 ml-1">tracks</span>
+                <span className="text-zinc-500 ml-1">uploads</span>
               </div>
               <div>
                 <span className="font-black text-white">{profile._count.likes}</span>
@@ -160,7 +223,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
       {/* Tracks */}
       <h2 className="text-xl font-black text-white mb-6">
-        {isOwn ? "Your" : `${profile.name ?? "Their"}'s`} Tracks
+      {isOwn ? "Your" : `${profile.name ?? "Their"}'s`} Uploads
       </h2>
 
       {tracks.length === 0 ? (
