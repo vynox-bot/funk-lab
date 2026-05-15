@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --funk-yellow: #a855f7;
+  --funk-orange: #c026d3;
+  --funk-purple: #7b2d8b;
+  --funk-dark: #09090b;
+  --funk-card: #18101f;
+  --funk-border: #2d1a42;
+}
+
+body {
+  background-color: var(--funk-dark);
+  color: #f0f0f0;
+  font-family: "Inter", sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--funk-card);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--funk-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--funk-yellow);
+}
+
+/* Waveform animation */
+@keyframes wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.8); }
+}
+
+.waveform-bar {
+  animation: wave 0.6s ease-in-out infinite;
+}
+
+/* Groove pulse */
+@keyframes groove-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.groove-pulse {
+  animation: groove-pulse 1.2s ease-in-out infinite;
+}
+
+/* Audio player */
+audio::-webkit-media-controls-panel {
+  background-color: var(--funk-card);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--funk-yellow);
+  outline-offset: 2px;
+}
