@@ -2,18 +2,21 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
 /**
- * Uploads a file buffer to either Cloudflare R2 (when env vars are set)
- * or the local public/uploads directory (development fallback).
+ * Uploads a file buffer to Supabase Storage, Cloudflare R2, or local fallback.
  *
- * Required env vars for R2:
- *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
- *   R2_BUCKET_NAME, R2_PUBLIC_URL
+ * Priority: Supabase > R2 > local
+ * Supabase env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET
+ * R2 env vars: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL
  */
 export async function uploadFile(
   buffer: Buffer,
   filename: string,
   type: "audio" | "image"
 ): Promise<string> {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    return uploadToSupabase(buffer, filename, type);
+  }
+
   const r2Ready =
     process.env.R2_ACCOUNT_ID &&
     process.env.R2_ACCESS_KEY_ID &&
@@ -24,6 +27,38 @@ export async function uploadFile(
   return r2Ready
     ? uploadToR2(buffer, filename, type)
     : uploadLocal(buffer, filename, type);
+}
+
+async function uploadToSupabase(
+  buffer: Buffer,
+  filename: string,
+  type: "audio" | "image"
+): Promise<string> {
+  const supabaseUrl = process.env.SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY!;
+  const bucket = process.env.SUPABASE_BUCKET ?? "funk-lab";
+  const path = type === "image" ? `images/${filename}` : `audio/${filename}`;
+  const contentType = type === "image" ? "image/webp" : "audio/mpeg";
+
+  const res = await fetch(
+    `${supabaseUrl}/storage/v1/object/${bucket}/${path}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": contentType,
+        "x-upsert": "true",
+      },
+      body: buffer,
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase upload failed: ${err}`);
+  }
+
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
 }
 
 async function uploadLocal(

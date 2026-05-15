@@ -6,14 +6,16 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      // Allow Cloudflare R2 public bucket URLs
-      // Pattern: https://pub-xxxx.r2.dev/**
+      // Supabase Storage
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      // Cloudflare R2 (if used instead)
       {
         protocol: "https",
         hostname: "*.r2.dev",
       },
-      // If using a custom domain for R2, add it here:
-      // { protocol: "https", hostname: "cdn.yourdomain.com" },
     ],
   },
 };
