@@ -140,7 +140,7 @@ export function TrackCard({ track }: { track: TrackData }) {
             {track.duration != null && track.duration > 0 && (
               <span className="text-zinc-700">{formatDuration(track.duration)}</span>
             )}
-            <span>♥ {track._count.likes}</span>
+            {track.category !== "rating" && <span>♥ {track._count.likes}</span>}
             {track.category !== "rating" && <span>💬 {track._count.comments}</span>}
             {track.category === "rating" && (
               <span>⭐ {track._count.ratings ?? 0} ratings</span>

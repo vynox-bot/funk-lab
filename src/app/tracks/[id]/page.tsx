@@ -103,6 +103,8 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
   const [myRatingComment, setMyRatingComment] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [trackId, setTrackId] = useState<string | null>(null);
 
@@ -165,6 +167,8 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
     if (res.ok) {
       setAverageRating(data.averageRating);
       setHasRated(true);
+      setRatingSuccess(true);
+      setTimeout(() => setRatingSuccess(false), 3000);
       // Refresh ratings list
       const updated = ratings.find((r) => r.user.id === session.user?.id);
       if (updated) {
@@ -177,6 +181,13 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
         setRatings([data.rating, ...ratings]);
       }
     }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const handleDelete = async () => {
@@ -229,14 +240,22 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
                 by {track.user.name ?? "Unknown Artist"}
               </Link>
             </div>
-            {session?.user?.id === track.userId && (
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={handleDelete}
-                className="text-xs text-red-500 hover:text-red-400 border border-red-900/40 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+                onClick={handleShare}
+                className="text-xs border border-[var(--funk-border)] text-zinc-400 hover:text-white hover:border-zinc-500 px-3 py-1.5 rounded-lg transition-colors"
               >
-                Delete
+                {copied ? "✓ Copied!" : "Share"}
               </button>
-            )}
+              {session?.user?.id === track.userId && (
+                <button
+                  onClick={handleDelete}
+                  className="text-xs text-red-500 hover:text-red-400 border border-red-900/40 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Audio player widget */}
@@ -303,13 +322,18 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
                     placeholder="Optional comment…"
                     className="w-full mt-3 bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2.5 text-white placeholder-zinc-600 focus:border-[var(--funk-yellow)] outline-none resize-none text-sm transition-colors"
                   />
-                  <button
-                    onClick={handleRate}
-                    disabled={submittingRating || myRating === 0}
-                    className="mt-3 px-5 py-2 bg-[var(--funk-yellow)] text-black font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submittingRating ? "Submitting…" : hasRated ? "Update Rating" : "Submit Rating"}
-                  </button>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button
+                      onClick={handleRate}
+                      disabled={submittingRating || myRating === 0}
+                      className="px-5 py-2 bg-[var(--funk-yellow)] text-black font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {submittingRating ? "Submitting…" : hasRated ? "Update Rating" : "Submit Rating"}
+                    </button>
+                    {ratingSuccess && (
+                      <span className="text-green-400 text-sm font-semibold">✓ Saved!</span>
+                    )}
+                  </div>
                 </div>
               )}
               {!session && (
