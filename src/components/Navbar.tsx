@@ -48,6 +48,12 @@ export function Navbar() {
           >
             Song Ratings
           </Link>
+          <Link
+            href="/generate"
+            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
+          >
+            ✨ Generate
+          </Link>
         </div>
 
         {/* Theme button */}
@@ -69,6 +75,12 @@ export function Navbar() {
                 className="px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all"
               >
                 + Upload
+              </Link>
+              <Link
+                href="/generate"
+                className="px-4 py-2 rounded-full border border-[var(--funk-border)] text-zinc-300 font-bold text-sm hover:text-white hover:border-[var(--funk-yellow)]/50 transition-all"
+              >
+                ✨ Generate
               </Link>
               <Link
                 href={`/profile/${session.user?.id}`}
@@ -128,6 +140,7 @@ export function Navbar() {
           {session ? (
             <>
               <Link href="/upload" onClick={() => setMenuOpen(false)} className="text-[var(--funk-yellow)] font-bold">+ Upload</Link>
+              <Link href="/generate" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">✨ Generate</Link>
               <Link href={`/profile/${session.user?.id}`} onClick={() => setMenuOpen(false)} className="text-zinc-300">{session.user?.name ?? "Profile"}</Link>
               <button onClick={() => { setMenuOpen(false); signOut({ callbackUrl: "/" }); }} className="text-left text-red-400">Sign out</button>
             </>
