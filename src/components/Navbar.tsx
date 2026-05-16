@@ -60,10 +60,10 @@ export function Navbar() {
         <button
           onClick={() => setPanelOpen(true)}
           title="Customize theme"
-          className="hidden md:flex items-center justify-center w-8 h-8 rounded-full text-zinc-400 hover:text-white transition-colors text-lg"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--funk-border)] text-zinc-400 hover:text-white hover:border-[var(--funk-yellow)]/50 transition-all text-xs font-semibold"
           aria-label="Open theme panel"
         >
-          🎨
+          🎨 Theme
         </button>
 
         {/* Auth */}

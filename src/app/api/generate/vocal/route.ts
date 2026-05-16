@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { lyrics, genre, pitch, tempo, title, customStyle, published } = await req.json();
+  const { lyrics, genre, pitch, tempo, bpm, title, customStyle, published } = await req.json();
 
   if (!lyrics || typeof lyrics !== "string" || !lyrics.trim()) {
     return NextResponse.json({ error: "Lyrics are required" }, { status: 400 });
@@ -24,24 +24,26 @@ export async function POST(req: NextRequest) {
 
   // Step 1: Generate a full song with Music Generation
   const effectiveStyle = (customStyle && String(customStyle).trim()) ? String(customStyle).trim() : null;
+  const bpmTag = bpm ? `, ${bpm} BPM` : "";
   const musicPrompt = effectiveStyle
-    ? `${effectiveStyle}, singing these lyrics: ${lyrics.slice(0, 800)}`
+    ? `${effectiveStyle}${bpmTag}, singing these lyrics: ${lyrics.slice(0, 800)}`
     : [
         genre ? `${genre} song` : "pop song",
         pitch === "Higher" ? "with high-pitched vocals" : pitch === "Lower" ? "with deep vocals" : "with clear vocals",
         tempo === "Fast" ? "upbeat fast tempo" : tempo === "Slow" ? "slow ballad tempo" : "medium tempo",
+        bpm ? `${bpm} BPM` : "",
         `Lyrics: ${lyrics.slice(0, 800)}`,
-      ].join(", ");
+      ].filter(Boolean).join(", ");
 
-  const musicRes = await fetch("https://api.elevenlabs.io/v1/music-generation", {
+  const musicRes = await fetch("https://api.elevenlabs.io/v1/music", {
     method: "POST",
     headers: {
       "xi-api-key": apiKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      prompt: musicPrompt.slice(0, 1000),
-      duration: 30,
+      prompt: musicPrompt.slice(0, 4100),
+      music_length_ms: 30000,
     }),
     signal: AbortSignal.timeout(120_000),
   });

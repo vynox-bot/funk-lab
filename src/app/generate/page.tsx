@@ -94,6 +94,7 @@ export default function GeneratePage() {
   const [vocGenre, setVocGenre] = useState("R&B");
   const [vocPitch, setVocPitch] = useState("Normal");
   const [vocTempo, setVocTempo] = useState("Medium");
+  const [vocBpm, setVocBpm] = useState("");
   const [vocCustomStyle, setVocCustomStyle] = useState("");
   const [vocStatus, setVocStatus] = useState<Status>("idle");
   const [vocError, setVocError] = useState("");
@@ -198,7 +199,7 @@ export default function GeneratePage() {
     const res = await fetch("/api/generate/vocal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: vocTitle, lyrics: vocLyrics, genre: vocGenre, pitch: vocPitch, tempo: vocTempo, customStyle: vocCustomStyle || undefined, published: samplePublished }),
+      body: JSON.stringify({ title: vocTitle, lyrics: vocLyrics, genre: vocGenre, pitch: vocPitch, tempo: vocTempo, bpm: vocBpm || undefined, customStyle: vocCustomStyle || undefined, published: samplePublished }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -489,28 +490,32 @@ export default function GeneratePage() {
                   <Label>Lyrics</Label>
                   <textarea value={vocLyrics} onChange={(e) => setVocLyrics(e.target.value)} rows={5} maxLength={5000} placeholder="Paste your lyrics here…" className={`${inputClass} resize-none`} required />
                 </div>
-                {!vocCustomStyle && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="flex flex-col gap-1.5">
+                <div className="flex gap-3">
+                  {!vocCustomStyle && (
+                    <div className="flex flex-col gap-1.5 flex-1">
                       <Label>Genre</Label>
                       <select value={vocGenre} onChange={(e) => setVocGenre(e.target.value)} className={selectClass}>
                         {GENRES.map((g) => <option key={g}>{g}</option>)}
                       </select>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label>Pitch</Label>
-                      <select value={vocPitch} onChange={(e) => setVocPitch(e.target.value)} className={selectClass}>
-                        {PITCHES.map((p) => <option key={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label>Tempo</Label>
-                      <select value={vocTempo} onChange={(e) => setVocTempo(e.target.value)} className={selectClass}>
-                        {TEMPOS.map((t) => <option key={t}>{t}</option>)}
-                      </select>
-                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Label>Pitch</Label>
+                    <select value={vocPitch} onChange={(e) => setVocPitch(e.target.value)} className={selectClass}>
+                      {PITCHES.map((p) => <option key={p}>{p}</option>)}
+                    </select>
                   </div>
-                )}
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Label>Tempo</Label>
+                    <select value={vocTempo} onChange={(e) => setVocTempo(e.target.value)} className={selectClass}>
+                      {TEMPOS.map((t) => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>BPM <span className="normal-case text-zinc-600 font-normal">(optional)</span></Label>
+                  <input type="number" value={vocBpm} onChange={(e) => setVocBpm(e.target.value)} min={40} max={300} placeholder="e.g. 120" className={inputClass} />
+                </div>
                 <div className="flex flex-col gap-1.5">
                   <Label>Custom Style <span className="normal-case text-zinc-600 font-normal">(optional — overrides dropdowns)</span></Label>
                   <input type="text" value={vocCustomStyle} onChange={(e) => setVocCustomStyle(e.target.value)} maxLength={200} placeholder="e.g. dreamy lo-fi R&B with reverb and slow swing" className={inputClass} />
