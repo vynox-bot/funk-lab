@@ -49,8 +49,7 @@ export default async function HomePage() {
             <span className="text-[var(--funk-yellow)]">Funk Community</span>
           </h1>
           <p className="text-lg text-zinc-400 mb-10 max-w-xl mx-auto">
-            Share your funk covers, fire samples, and silky vocals with a
-            community of musicians who live for the one.
+            Share your work with other people who respect it
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

@@ -58,7 +58,7 @@ export function TrackCard({ track }: { track: TrackData }) {
   };
 
   return (
-    <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl overflow-hidden hover:border-[var(--funk-yellow)]/40 transition-colors group flex flex-col">
+    <div className="self-start bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl overflow-hidden hover:border-[var(--funk-yellow)]/40 transition-colors group flex flex-col">
       {/* Artwork image for cover tracks */}
       {track.category === "cover" && (
         <Link href={`/tracks/${track.id}`} className="block aspect-square relative bg-zinc-900 flex-shrink-0">
@@ -76,45 +76,64 @@ export function TrackCard({ track }: { track: TrackData }) {
       )}
 
       <div className="p-5 flex flex-col gap-3 flex-1">
-        {/* Category badge + play button row */}
+        {/* Badges (left) + Actions: download + play (right) */}
         <div className="flex items-center justify-between gap-2">
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${CATEGORY_COLORS[track.category] ?? "bg-zinc-500/20 text-zinc-300"}`}
-          >
-            {CATEGORY_LABELS[track.category] ?? track.category}
-          </span>
-          {track.aiGenerated && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-              ✨ AI
-            </span>
-          )}
-          {track.published === false && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600/40">
-              🔒 Private
-            </span>
-          )}
-
-          {track.audioUrl && (
-            <button
-              onClick={handlePlay}
-              className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-black transition-all ${
-                isThisTrack && isPlaying
-                  ? "bg-[var(--funk-orange)] scale-95"
-                  : "bg-[var(--funk-yellow)] hover:scale-105"
-              }`}
-              aria-label={isThisTrack && isPlaying ? "Pause" : "Play"}
+          {/* Left: category + meta badges */}
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${CATEGORY_COLORS[track.category] ?? "bg-zinc-500/20 text-zinc-300"}`}
             >
-              {isThisTrack && isPlaying ? (
-                <span className="flex gap-0.5 items-end h-3.5">
-                  <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "0ms" }} />
-                  <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "150ms" }} />
-                  <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "300ms" }} />
-                </span>
-              ) : (
-                <span className="ml-0.5 text-sm">▶</span>
-              )}
-            </button>
-          )}
+              {CATEGORY_LABELS[track.category] ?? track.category}
+            </span>
+            {track.aiGenerated && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                ✨ AI
+              </span>
+            )}
+            {track.published === false && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600/40">
+                🔒 Private
+              </span>
+            )}
+          </div>
+
+          {/* Right: download (samples only) + play button */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {track.category === "sample" && track.audioUrl && (
+              <a
+                href={track.audioUrl}
+                download={`${track.title}.mp3`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Download sample"
+                onClick={(e) => e.stopPropagation()}
+                className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 hover:bg-[var(--funk-yellow)] hover:border-[var(--funk-yellow)] flex items-center justify-center text-zinc-400 hover:text-black transition-all text-sm font-bold"
+              >
+                ↓
+              </a>
+            )}
+            {track.audioUrl && (
+              <button
+                onClick={handlePlay}
+                className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-black transition-all ${
+                  isThisTrack && isPlaying
+                    ? "bg-[var(--funk-orange)] scale-95"
+                    : "bg-[var(--funk-yellow)] hover:scale-105"
+                }`}
+                aria-label={isThisTrack && isPlaying ? "Pause" : "Play"}
+              >
+                {isThisTrack && isPlaying ? (
+                  <span className="flex gap-0.5 items-end h-3.5">
+                    <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "0ms" }} />
+                    <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "150ms" }} />
+                    <span className="w-0.5 h-3.5 bg-black rounded waveform-bar" style={{ animationDelay: "300ms" }} />
+                  </span>
+                ) : (
+                  <span className="ml-0.5 text-sm">▶</span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Title + Artist */}
@@ -159,19 +178,6 @@ export function TrackCard({ track }: { track: TrackData }) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {track.category === "sample" && track.audioUrl && (
-              <a
-                href={track.audioUrl}
-                download={`${track.title}.mp3`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Download sample"
-                className="text-zinc-500 hover:text-[var(--funk-yellow)] transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                ⬇
-              </a>
-            )}
             <span>{new Date(track.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
