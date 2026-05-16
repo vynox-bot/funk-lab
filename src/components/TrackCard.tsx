@@ -15,6 +15,7 @@ export interface TrackData {
   plays: number;
   createdAt: string;
   aiGenerated?: boolean;
+  published?: boolean;
   user: { id: string; name: string | null };
   _count: { likes: number; comments: number; ratings?: number };
   averageRating?: number | null;
@@ -85,6 +86,11 @@ export function TrackCard({ track }: { track: TrackData }) {
           {track.aiGenerated && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
               ✨ AI
+            </span>
+          )}
+          {track.published === false && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600/40">
+              🔒 Private
             </span>
           )}
 

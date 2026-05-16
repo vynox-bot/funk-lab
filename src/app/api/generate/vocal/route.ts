@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { lyrics, genre, pitch, tempo, title, customStyle } = await req.json();
+  const { lyrics, genre, pitch, tempo, title, customStyle, published } = await req.json();
 
   if (!lyrics || typeof lyrics !== "string" || !lyrics.trim()) {
     return NextResponse.json({ error: "Lyrics are required" }, { status: 400 });
@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       category: "sample",
       audioUrl: publicUrl,
       aiGenerated: true,
+      published: published !== false,
       userId: session.user.id,
     },
   });

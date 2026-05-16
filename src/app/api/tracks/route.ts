@@ -89,6 +89,10 @@ export async function GET(req: Request) {
   const limit = Math.min(20, parseInt(searchParams.get("limit") ?? "12"));
   const userId = searchParams.get("userId");
 
+  // Only show private tracks to the owner
+  const session = userId ? await auth() : null;
+  const isOwnProfile = session?.user?.id === userId;
+
   const orderBy =
     sort === "oldest"
       ? [{ createdAt: "asc" as const }]
@@ -99,6 +103,7 @@ export async function GET(req: Request) {
       : [{ createdAt: "desc" as const }];
 
   const where = {
+    ...(isOwnProfile ? {} : { published: true }),
     ...(category && ["cover", "sample", "rating"].includes(category) ? { category } : {}),
     ...(userId ? { userId } : {}),
     ...(search ? { title: { contains: search, mode: "insensitive" as const } } : {}),

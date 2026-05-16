@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { type, key, bpm, instrument, style, customStyle, bars, genre, customGenre, title } = await req.json();
+  const { type, key, bpm, instrument, style, customStyle, bars, genre, customGenre, title, published } = await req.json();
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       audioUrl: publicUrl,
       duration: parseFloat(durationSeconds.toFixed(2)),
       aiGenerated: true,
+      published: published !== false,
       userId: session.user.id,
     },
   });
