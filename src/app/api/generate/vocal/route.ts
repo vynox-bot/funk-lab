@@ -22,51 +22,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ElevenLabs not configured" }, { status: 503 });
   }
 
-  // Step 1: Generate a full song with Music Generation
-  const effectiveStyle = (customStyle && String(customStyle).trim()) ? String(customStyle).trim() : null;
-  const bpmTag = bpm ? `, ${bpm} BPM` : "";
-  const musicPrompt = effectiveStyle
-    ? `${effectiveStyle}${bpmTag}, singing these lyrics: ${lyrics.slice(0, 800)}`
-    : [
-        genre ? `${genre} song` : "pop song",
-        pitch === "Higher" ? "with high-pitched vocals" : pitch === "Lower" ? "with deep vocals" : "with clear vocals",
-        tempo === "Fast" ? "upbeat fast tempo" : tempo === "Slow" ? "slow ballad tempo" : "medium tempo",
-        bpm ? `${bpm} BPM` : "",
-        `Lyrics: ${lyrics.slice(0, 800)}`,
-      ].filter(Boolean).join(", ");
+  // Generate vocal using ElevenLabs TTS (works on free plan)
+  // Map pitch to voice: Higher → Elli (F), Normal → Rachel (F), Lower → Adam (M)
+  const voiceMap: Record<string, string> = {
+    Higher: "MF3mGyEYCl7XYWbV9V6O",
+    Normal: "21m00Tcm4TlvDq8ikWAM",
+    Lower:  "pNInz6obpgDQGcFmaJgB",
+  };
+  const voiceId = voiceMap[pitch ?? "Normal"] ?? voiceMap.Normal;
 
-  const musicRes = await fetch("https://api.elevenlabs.io/v1/music", {
+  const ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: "POST",
     headers: {
       "xi-api-key": apiKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      prompt: musicPrompt.slice(0, 4100),
-      music_length_ms: 30000,
+      text: lyrics.slice(0, 5000),
+      model_id: "eleven_multilingual_v2",
+      voice_settings: {
+        stability: 0.4,
+        similarity_boost: 0.75,
+        style: 0.5,
+      },
     }),
     signal: AbortSignal.timeout(120_000),
   });
 
-  if (!musicRes.ok) {
-    const err = await musicRes.text();
-    return NextResponse.json({ error: `Music generation failed: ${err}` }, { status: 500 });
+  if (!ttsRes.ok) {
+    const err = await ttsRes.text();
+    return NextResponse.json({ error: `Vocal generation failed: ${err}` }, { status: 500 });
   }
 
-  const musicBuffer = await musicRes.arrayBuffer();
-
-  // Step 2: Extract vocal stems via Audio Isolation (falls back to full mix on failure)
-  const formData = new FormData();
-  formData.append("audio", new Blob([musicBuffer], { type: "audio/mpeg" }), "music.mp3");
-
-  const isolateRes = await fetch("https://api.elevenlabs.io/v1/audio-isolation", {
-    method: "POST",
-    headers: { "xi-api-key": apiKey },
-    body: formData,
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  const audioBuffer = isolateRes.ok ? await isolateRes.arrayBuffer() : musicBuffer;
+  const audioBuffer = await ttsRes.arrayBuffer();
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -97,7 +85,7 @@ export async function POST(req: NextRequest) {
   const track = await prisma.track.create({
     data: {
       title: title.slice(0, 100),
-      description: `AI Vocal | ${genre ?? "Unknown"} genre | ${pitch ?? "Normal"} pitch | ${tempo ?? "Medium"} tempo\nLyrics: ${lyrics.slice(0, 300)}`,
+      description: `AI Vocal | ${genre ?? "Unknown"} genre | ${pitch ?? "Normal"} pitch | ${tempo ?? "Medium"} tempo${bpm ? ` | ${bpm} BPM` : ""}\nLyrics: ${lyrics.slice(0, 300)}`,
       category: "sample",
       audioUrl: publicUrl,
       aiGenerated: true,
