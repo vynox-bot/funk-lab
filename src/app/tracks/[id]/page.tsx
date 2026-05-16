@@ -46,6 +46,7 @@ interface Track {
   plays: number;
   createdAt: string;
   userId: string;
+  aiGenerated: boolean;
   user: { id: string; name: string | null };
   _count: { likes: number; comments: number; ratings: number };
   likes?: { id: string }[];
@@ -290,6 +291,11 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
               <span className="inline-flex items-center text-xs font-semibold bg-[var(--funk-yellow)]/10 text-[var(--funk-yellow)] border border-[var(--funk-yellow)]/20 px-2.5 py-0.5 rounded-full mb-3">
                 {CATEGORY_LABELS[track.category] ?? track.category}
               </span>
+              {track.aiGenerated && (
+                <span className="ml-2 inline-flex items-center text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-0.5 rounded-full mb-3">
+                  ✨ AI Generated
+                </span>
+              )}
               <h1 className="text-3xl font-black text-white">{track.title}</h1>
               <Link href={`/profile/${track.user.id}`} className="text-zinc-400 hover:text-white text-sm mt-1 inline-block transition-colors">
                 by {track.user.name ?? "Unknown Artist"}

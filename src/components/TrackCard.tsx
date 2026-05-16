@@ -14,6 +14,7 @@ export interface TrackData {
   duration?: number | null;
   plays: number;
   createdAt: string;
+  aiGenerated?: boolean;
   user: { id: string; name: string | null };
   _count: { likes: number; comments: number; ratings?: number };
   averageRating?: number | null;
@@ -81,6 +82,11 @@ export function TrackCard({ track }: { track: TrackData }) {
           >
             {CATEGORY_LABELS[track.category] ?? track.category}
           </span>
+          {track.aiGenerated && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              ✨ AI
+            </span>
+          )}
 
           {track.audioUrl && (
             <button

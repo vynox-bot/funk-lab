@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       description: description ? String(description).slice(0, 500) : `AI-generated artwork: ${prompt.slice(0, 200)}`,
       category: "cover",
       imageUrl: publicUrl,
+      aiGenerated: true,
       userId: session.user.id,
     },
   });

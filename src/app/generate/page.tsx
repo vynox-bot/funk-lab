@@ -303,7 +303,7 @@ export default function GeneratePage() {
       {mainTab === "artwork" && (
         <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-6">
           <h2 className="font-black text-white text-lg mb-1">Generate Artwork</h2>
-          <p className="text-zinc-500 text-xs mb-6">Powered by Pollinations AI (FLUX) — free, no API key needed. Describe any visual style you want.</p>
+          <p className="text-zinc-500 text-xs mb-6">Powered by Pollinations AI. Describe any visual style you want.</p>
           <form onSubmit={handleArtwork} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Title</Label>

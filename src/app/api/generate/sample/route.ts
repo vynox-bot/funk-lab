@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
       category: "sample",
       audioUrl: publicUrl,
       duration: parseFloat(durationSeconds.toFixed(2)),
+      aiGenerated: true,
       userId: session.user.id,
     },
   });
