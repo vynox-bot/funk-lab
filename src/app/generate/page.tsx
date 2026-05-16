@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 type MainTab = "artwork" | "sample" | "freesound";
 type SampleTab = "oneshot" | "loop" | "vocal";
-type Status = "idle" | "loading" | "error";
+type Status = "idle" | "loading" | "polling" | "error";
 
 interface FreesoundResult {
   id: number;
@@ -23,7 +23,7 @@ const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const INSTRUMENTS = ["Kick Drum", "Snare", "Hi-Hat", "Bass", "Piano", "Guitar", "Synth Lead", "Pad", "Percussion", "Clap", "Shaker"];
 const STYLES = ["Punchy", "Soft", "Distorted", "Clean", "Warm", "Bright", "Dark", "Crispy", "Vintage"];
 const GENRES = ["Hip-Hop", "EDM", "House", "Trap", "Drum & Bass", "Lo-Fi", "Jazz", "Funk", "R&B", "Techno", "Pop"];
-const PITCHES = ["Normal", "Higher", "Lower"];
+const PITCHES = ["Normal", "Higher (Female)", "Lower (Male)"];
 const TEMPOS = ["Slow", "Medium", "Fast"];
 const BARS = ["1", "2", "4", "8"];
 
@@ -46,7 +46,7 @@ function GenBtn({ loading, disabled, children }: { loading: boolean; disabled?: 
     >
       {loading ? (
         <>
-          <span className="animate-spin">⚙️</span> Generating… this may take ~30s
+          <span className="animate-spin">⚙️</span> Generating… this may take 30–90s
         </>
       ) : (
         children
@@ -196,18 +196,66 @@ export default function GeneratePage() {
     e.preventDefault();
     setVocStatus("loading");
     setVocError("");
-    const res = await fetch("/api/generate/vocal", {
+
+    const body = {
+      title: vocTitle,
+      lyrics: vocLyrics,
+      genre: vocGenre,
+      pitch: vocPitch,
+      tempo: vocTempo,
+      bpm: vocBpm || undefined,
+      customStyle: vocCustomStyle || undefined,
+      published: samplePublished,
+    };
+
+    // Start prediction
+    const startRes = await fetch("/api/generate/vocal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: vocTitle, lyrics: vocLyrics, genre: vocGenre, pitch: vocPitch, tempo: vocTempo, bpm: vocBpm || undefined, customStyle: vocCustomStyle || undefined, published: samplePublished }),
+      body: JSON.stringify(body),
     });
-    const data = await res.json();
-    if (res.ok) {
-      router.push(`/tracks/${data.track.id}`);
-    } else {
-      setVocError(data.error ?? "Generation failed");
+    const startData = await startRes.json();
+    if (!startRes.ok) {
+      setVocError(startData.error ?? "Failed to start generation");
       setVocStatus("error");
+      return;
     }
+
+    const predictionId: string = startData.predictionId;
+    setVocStatus("polling");
+
+    // Poll status every 5 seconds, timeout after 3 minutes
+    const maxAttempts = 36;
+    let attempts = 0;
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setVocError("Generation timed out. Please try again.");
+        setVocStatus("error");
+        return;
+      }
+      attempts++;
+
+      const statusRes = await fetch("/api/generate/vocal/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionId, ...body }),
+      });
+      const statusData = await statusRes.json();
+
+      if (!statusRes.ok || statusData.status === "failed") {
+        setVocError(statusData.error ?? "Generation failed");
+        setVocStatus("error");
+        return;
+      }
+      if (statusData.status === "done") {
+        router.push(`/tracks/${statusData.track.id}`);
+        return;
+      }
+      // Still pending — poll again
+      setTimeout(poll, 5000);
+    };
+
+    setTimeout(poll, 5000);
   };
 
   const handleFsSearch = async (e: React.FormEvent) => {
@@ -346,13 +394,13 @@ export default function GeneratePage() {
       {mainTab === "sample" && (
         <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-6">
           <h2 className="font-black text-white text-lg mb-1">Generate Sample</h2>
-          <p className="text-zinc-500 text-xs mb-4">Powered by ElevenLabs Sound Effects</p>
+          <p className="text-zinc-500 text-xs mb-4">Oneshot & Loop powered by ElevenLabs · Vocal powered by MiniMax Music 2.6</p>
 
           {/* Sample sub-tabs */}
           <div className="flex gap-2 mb-4 p-1 bg-[var(--funk-dark)] rounded-xl">
             {sampleTabBtn("oneshot", "Oneshot")}
             {sampleTabBtn("loop", "Loop")}
-            {sampleTabBtn("vocal", "Vocal 🧪")}
+            {sampleTabBtn("vocal", "Vocal 🎤")}
           </div>
 
           {/* Visibility toggle */}
@@ -475,10 +523,10 @@ export default function GeneratePage() {
           {sampleTab === "vocal" && (
             <div className="flex flex-col gap-4">
               {/* Beta banner */}
-              <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3">
-                <span className="text-lg leading-none mt-0.5">⚠️</span>
-                <p className="text-orange-300 text-xs leading-relaxed">
-                  <strong>Early Beta:</strong> Vocal creation is in very early beta and can be unstable. Results are AI text-to-speech, not singing — quality and accuracy may vary significantly.
+              <div className="flex items-start gap-2 bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-3">
+                <span className="text-lg leading-none mt-0.5">🎤</span>
+                <p className="text-purple-300 text-xs leading-relaxed">
+                  <strong>AI Song Generation</strong> — Powered by MiniMax Music 2.6. Generates a full song with real vocals and instrumentation from your lyrics. Takes 30–90 seconds.
                 </p>
               </div>
               <form onSubmit={handleVocal} className="flex flex-col gap-4">
@@ -487,8 +535,8 @@ export default function GeneratePage() {
                   <input type="text" value={vocTitle} onChange={(e) => setVocTitle(e.target.value)} maxLength={100} placeholder="e.g. Midnight Verse" className={inputClass} required />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Lyrics</Label>
-                  <textarea value={vocLyrics} onChange={(e) => setVocLyrics(e.target.value)} rows={5} maxLength={5000} placeholder="Paste your lyrics here…" className={`${inputClass} resize-none`} required />
+                  <Label>Lyrics <span className="normal-case text-zinc-600 font-normal">(supports [Verse] / [Chorus] / [Bridge] tags)</span></Label>
+                  <textarea value={vocLyrics} onChange={(e) => setVocLyrics(e.target.value)} rows={5} maxLength={3500} placeholder="Paste your lyrics here…" className={`${inputClass} resize-none`} required />
                 </div>
                 <div className="flex gap-3">
                   {!vocCustomStyle && (
@@ -521,7 +569,7 @@ export default function GeneratePage() {
                   <input type="text" value={vocCustomStyle} onChange={(e) => setVocCustomStyle(e.target.value)} maxLength={200} placeholder="e.g. dreamy lo-fi R&B with reverb and slow swing" className={inputClass} />
                 </div>
                 {vocError && <p className="text-red-400 text-xs">{vocError}</p>}
-                <GenBtn loading={vocStatus === "loading"}>✨ Generate Vocal</GenBtn>
+                <GenBtn loading={vocStatus === "loading" || vocStatus === "polling"}>✨ Generate Vocal Song</GenBtn>
               </form>
             </div>
           )}

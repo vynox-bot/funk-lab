@@ -1,6 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+
+/** Detect common section labels in lyrics and replace with minimax structure tags. */
+function autoTagLyrics(raw: string): string {
+  const tagMap: [RegExp, string][] = [
+    [/^\s*[\[(]?\s*intro\s*\d*\s*[\])]?:?\s*$/im, "[Intro]"],
+    [/^\s*[\[(]?\s*verse\s*\d*\s*[\])]?:?\s*$/im, "[Verse]"],
+    [/^\s*[\[(]?\s*pre[- ]?chorus\s*\d*\s*[\])]?:?\s*$/im, "[Pre Chorus]"],
+    [/^\s*[\[(]?\s*chorus\s*\d*\s*[\])]?:?\s*$/im, "[Chorus]"],
+    [/^\s*[\[(]?\s*hook\s*\d*\s*[\])]?:?\s*$/im, "[Hook]"],
+    [/^\s*[\[(]?\s*bridge\s*\d*\s*[\])]?:?\s*$/im, "[Bridge]"],
+    [/^\s*[\[(]?\s*outro\s*\d*\s*[\])]?:?\s*$/im, "[Outro]"],
+    [/^\s*[\[(]?\s*interlude\s*\d*\s*[\])]?:?\s*$/im, "[Interlude]"],
+    [/^\s*[\[(]?\s*break\s*\d*\s*[\])]?:?\s*$/im, "[Break]"],
+    [/^\s*[\[(]?\s*drop\s*\d*\s*[\])]?:?\s*$/im, "[Drop]"],
+    [/^\s*[\[(]?\s*build\s*(?:up)?\s*\d*\s*[\])]?:?\s*$/im, "[Build Up]"],
+    [/^\s*[\[(]?\s*solo\s*\d*\s*[\])]?:?\s*$/im, "[Solo]"],
+  ];
+
+  let tagged = raw;
+  for (const [regex, tag] of tagMap) {
+    tagged = tagged.replace(regex, tag);
+  }
+
+  // If no minimax tags found, wrap the whole thing in [Verse]
+  if (!/\[(Verse|Chorus|Intro|Outro|Bridge|Hook|Drop|Pre Chorus|Interlude|Break|Build Up|Solo)\]/i.test(tagged)) {
+    tagged = "[Verse]\n" + tagged;
+  }
+
+  return tagged;
+}
+
+/** Build a minimax prompt string from form fields. */
+function buildPrompt(genre: string, pitch: string, tempo: string, bpm?: string, customStyle?: string): string {
+  if (customStyle?.trim()) return customStyle.trim();
+
+  const vocalGender = pitch?.startsWith("Higher")
+    ? "female vocal"
+    : pitch?.startsWith("Lower")
+    ? "male vocal"
+    : "";
+  const bpmStr = bpm
+    ? `${bpm} BPM`
+    : tempo === "Slow"
+    ? "70 BPM"
+    : tempo === "Fast"
+    ? "140 BPM"
+    : "100 BPM";
+
+  return [genre, bpmStr, vocalGender].filter(Boolean).join(", ");
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -17,82 +66,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "ElevenLabs not configured" }, { status: 503 });
+  const token = process.env.REPLICATE_API_TOKEN;
+  if (!token) {
+    return NextResponse.json({ error: "Music generation not configured" }, { status: 503 });
   }
 
-  // Generate vocal using ElevenLabs TTS (works on free plan)
-  // Map pitch to voice: Higher → Elli (F), Normal → Rachel (F), Lower → Adam (M)
-  const voiceMap: Record<string, string> = {
-    Higher: "MF3mGyEYCl7XYWbV9V6O",
-    Normal: "21m00Tcm4TlvDq8ikWAM",
-    Lower:  "pNInz6obpgDQGcFmaJgB",
-  };
-  const voiceId = voiceMap[pitch ?? "Normal"] ?? voiceMap.Normal;
+  const taggedLyrics = autoTagLyrics(lyrics.slice(0, 3500));
+  const prompt = buildPrompt(genre ?? "Pop", pitch ?? "Normal", tempo ?? "Medium", bpm, customStyle);
 
-  const ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+  const predRes = await fetch("https://api.replicate.com/v1/models/minimax/music-2.6/predictions", {
     method: "POST",
     headers: {
-      "xi-api-key": apiKey,
+      Authorization: `Token ${token}`,
       "Content-Type": "application/json",
+      Prefer: "respond-async",
     },
     body: JSON.stringify({
-      text: lyrics.slice(0, 5000),
-      model_id: "eleven_multilingual_v2",
-      voice_settings: {
-        stability: 0.4,
-        similarity_boost: 0.75,
-        style: 0.5,
+      input: {
+        lyrics: taggedLyrics,
+        prompt,
+        audio_format: "mp3",
+        sample_rate: 44100,
+        bitrate: 256000,
       },
     }),
-    signal: AbortSignal.timeout(120_000),
   });
 
-  if (!ttsRes.ok) {
-    const err = await ttsRes.text();
-    return NextResponse.json({ error: `Vocal generation failed: ${err}` }, { status: 500 });
+  if (!predRes.ok) {
+    const err = await predRes.text();
+    return NextResponse.json({ error: `Failed to start generation: ${err}` }, { status: 500 });
   }
 
-  const audioBuffer = await ttsRes.arrayBuffer();
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-  const bucket = process.env.SUPABASE_BUCKET ?? "funk-lab";
-
-  if (!supabaseUrl || !serviceKey) {
-    return NextResponse.json({ error: "Storage not configured" }, { status: 503 });
-  }
-
-  const filename = `generated/vocal-${session.user.id}-${Date.now()}.mp3`;
-  const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${filename}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "audio/mpeg",
-      "x-upsert": "true",
-    },
-    body: new Uint8Array(audioBuffer),
-  });
-
-  if (!uploadRes.ok) {
-    const err = await uploadRes.text();
-    return NextResponse.json({ error: `Storage upload failed: ${err}` }, { status: 500 });
-  }
-
-  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filename}`;
-
-  const track = await prisma.track.create({
-    data: {
-      title: title.slice(0, 100),
-      description: `AI Vocal | ${genre ?? "Unknown"} genre | ${pitch ?? "Normal"} pitch | ${tempo ?? "Medium"} tempo${bpm ? ` | ${bpm} BPM` : ""}\nLyrics: ${lyrics.slice(0, 300)}`,
-      category: "sample",
-      audioUrl: publicUrl,
-      aiGenerated: true,
-      published: published !== false,
-      userId: session.user.id,
-    },
-  });
-
-  return NextResponse.json({ track, audioUrl: publicUrl });
+  const prediction = await predRes.json();
+  return NextResponse.json({ predictionId: prediction.id });
 }
