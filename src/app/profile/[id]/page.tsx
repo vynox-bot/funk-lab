@@ -25,6 +25,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", bio: "", website: "", twitter: "", instagram: "", image: "" });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +44,21 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       setLoading(false);
     });
   }, [userId]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingAvatar(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/users/${userId}/avatar`, { method: "POST", body: fd });
+    const data = await res.json();
+    if (res.ok) {
+      setEditForm((prev) => ({ ...prev, image: data.url }));
+      setProfile((prev) => prev ? { ...prev, image: data.url } : prev);
+    }
+    setUploadingAvatar(false);
+  };
 
   const handleSave = async () => {
     if (!userId) return;
@@ -84,14 +100,33 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-8 mb-10">
         <div className="flex items-start gap-6">
           {/* Avatar */}
-          <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
-            {profile.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.image} alt={profile.name ?? "Avatar"} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-3xl font-black text-[var(--funk-yellow)]">
-                {(profile.name ?? "?")[0].toUpperCase()}
-              </div>
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden group/avatar">
+              {profile.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.image} alt={profile.name ?? "Avatar"} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[var(--funk-yellow)]/20 flex items-center justify-center text-3xl font-black text-[var(--funk-yellow)]">
+                  {(profile.name ?? "?")[0].toUpperCase()}
+                </div>
+              )}
+              {isOwn && editing && (
+                <label className="absolute inset-0 flex items-center justify-center bg-black/60 cursor-pointer opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-full">
+                  <span className="text-white text-xs font-bold">{uploadingAvatar ? "…" : "📷"}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    onChange={handleAvatarChange}
+                    disabled={uploadingAvatar}
+                  />
+                </label>
+              )}
+            </div>
+            {isOwn && editing && (
+              <span className="text-[10px] text-zinc-600">
+                {uploadingAvatar ? "Uploading…" : "Hover to change"}
+              </span>
             )}
           </div>
 
@@ -113,14 +148,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
                   className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none resize-none text-sm"
                   placeholder="Tell the community about yourself…"
-                />
-                <input
-                  type="url"
-                  value={editForm.image}
-                  maxLength={500}
-                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
-                  className="bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-2 text-white focus:border-[var(--funk-yellow)] outline-none text-sm"
-                  placeholder="Profile picture URL (https://…)"
                 />
                 <input
                   type="url"
@@ -240,7 +267,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           )}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 items-start">
           {tracks.map((track) => (
             <TrackCard key={track.id} track={track} />
           ))}

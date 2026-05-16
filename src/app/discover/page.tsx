@@ -127,7 +127,7 @@ function DiscoverContent() {
 
       {/* Track grid */}
       {loading && tracks.length === 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-5 h-48 animate-pulse" />
           ))}
@@ -140,7 +140,7 @@ function DiscoverContent() {
         </div>
       ) : (
         <>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {tracks.map((track) => (
               <TrackCard key={track.id} track={track} />
             ))}
