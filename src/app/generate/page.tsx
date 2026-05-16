@@ -74,6 +74,7 @@ export default function GeneratePage() {
   const [osBpm, setOsBpm] = useState("120");
   const [osInstrument, setOsInstrument] = useState("Kick Drum");
   const [osStyle, setOsStyle] = useState("Punchy");
+  const [osCustomStyle, setOsCustomStyle] = useState("");
   const [osStatus, setOsStatus] = useState<Status>("idle");
   const [osError, setOsError] = useState("");
 
@@ -83,6 +84,7 @@ export default function GeneratePage() {
   const [loopBpm, setLoopBpm] = useState("120");
   const [loopBars, setLoopBars] = useState("4");
   const [loopGenre, setLoopGenre] = useState("Hip-Hop");
+  const [loopCustomGenre, setLoopCustomGenre] = useState("");
   const [loopStatus, setLoopStatus] = useState<Status>("idle");
   const [loopError, setLoopError] = useState("");
 
@@ -92,6 +94,7 @@ export default function GeneratePage() {
   const [vocGenre, setVocGenre] = useState("R&B");
   const [vocPitch, setVocPitch] = useState("Normal");
   const [vocTempo, setVocTempo] = useState("Medium");
+  const [vocCustomStyle, setVocCustomStyle] = useState("");
   const [vocStatus, setVocStatus] = useState<Status>("idle");
   const [vocError, setVocError] = useState("");
 
@@ -156,7 +159,7 @@ export default function GeneratePage() {
     const res = await fetch("/api/generate/sample", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "oneshot", title: osTitle, key: osKey, bpm: osBpm, instrument: osInstrument, style: osStyle }),
+      body: JSON.stringify({ type: "oneshot", title: osTitle, key: osKey, bpm: osBpm, instrument: osInstrument, style: osStyle, customStyle: osCustomStyle || undefined }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -174,7 +177,7 @@ export default function GeneratePage() {
     const res = await fetch("/api/generate/sample", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "loop", title: loopTitle, key: loopKey, bpm: loopBpm, bars: loopBars, genre: loopGenre }),
+      body: JSON.stringify({ type: "loop", title: loopTitle, key: loopKey, bpm: loopBpm, bars: loopBars, genre: loopGenre, customGenre: loopCustomGenre || undefined }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -192,7 +195,7 @@ export default function GeneratePage() {
     const res = await fetch("/api/generate/vocal", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: vocTitle, lyrics: vocLyrics, genre: vocGenre, pitch: vocPitch, tempo: vocTempo }),
+      body: JSON.stringify({ title: vocTitle, lyrics: vocLyrics, genre: vocGenre, pitch: vocPitch, tempo: vocTempo, customStyle: vocCustomStyle || undefined }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -381,6 +384,10 @@ export default function GeneratePage() {
                   </select>
                 </div>
               </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Custom Style <span className="normal-case text-zinc-600 font-normal">(optional — overrides dropdown)</span></Label>
+                <input type="text" value={osCustomStyle} onChange={(e) => setOsCustomStyle(e.target.value)} maxLength={200} placeholder="e.g. heavy distorted trap 808 with sub bass" className={inputClass} />
+              </div>
               {osError && <p className="text-red-400 text-xs">{osError}</p>}
               <GenBtn loading={osStatus === "loading"}>✨ Generate Oneshot</GenBtn>
             </form>
@@ -418,6 +425,10 @@ export default function GeneratePage() {
                     {GENRES.map((g) => <option key={g}>{g}</option>)}
                   </select>
                 </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Custom Genre / Style <span className="normal-case text-zinc-600 font-normal">(optional — overrides dropdown)</span></Label>
+                <input type="text" value={loopCustomGenre} onChange={(e) => setLoopCustomGenre(e.target.value)} maxLength={200} placeholder="e.g. UK drill with dark strings and hi-hats" className={inputClass} />
               </div>
               {loopError && <p className="text-red-400 text-xs">{loopError}</p>}
               <GenBtn loading={loopStatus === "loading"}>✨ Generate Loop</GenBtn>
@@ -462,6 +473,10 @@ export default function GeneratePage() {
                       {TEMPOS.map((t) => <option key={t}>{t}</option>)}
                     </select>
                   </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Custom Style <span className="normal-case text-zinc-600 font-normal">(optional — overrides dropdowns)</span></Label>
+                  <input type="text" value={vocCustomStyle} onChange={(e) => setVocCustomStyle(e.target.value)} maxLength={200} placeholder="e.g. dreamy lo-fi R&B with reverb and slow swing" className={inputClass} />
                 </div>
                 {vocError && <p className="text-red-400 text-xs">{vocError}</p>}
                 <GenBtn loading={vocStatus === "loading"}>✨ Generate Vocal</GenBtn>

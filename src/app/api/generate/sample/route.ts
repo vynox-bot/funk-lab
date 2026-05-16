@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { type, key, bpm, instrument, style, bars, genre, title } = await req.json();
+  const { type, key, bpm, instrument, style, customStyle, bars, genre, customGenre, title } = await req.json();
 
   if (!title || typeof title !== "string" || !title.trim()) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -23,15 +23,16 @@ export async function POST(req: NextRequest) {
   let durationSeconds = 3;
 
   if (type === "oneshot") {
-    prompt = `A ${style ?? "punchy"} ${instrument ?? "kick drum"} oneshot sample${key ? ` in the key of ${key}` : ""}${bpm ? ` at ${bpm} BPM` : ""}. High quality, isolated hit, dry, no reverb, no tail.`;
+    const effectiveStyle = (customStyle && String(customStyle).trim()) ? String(customStyle).trim() : (style ?? "punchy");
+    prompt = `A ${effectiveStyle} ${instrument ?? "kick drum"} oneshot sample${key ? ` in the key of ${key}` : ""}${bpm ? ` at ${bpm} BPM` : ""}. High quality, isolated hit, dry, no reverb, no tail.`;
     durationSeconds = 3;
   } else if (type === "loop") {
+    const effectiveGenre = (customGenre && String(customGenre).trim()) ? String(customGenre).trim() : (genre ?? "hip-hop");
     const barsNum = Number(bars) || 4;
     const bpmNum = Number(bpm) || 120;
-    // seconds per bar = 60/bpm * 4 beats
     const secondsPerBar = (60 / bpmNum) * 4;
     durationSeconds = Math.min(Math.max(secondsPerBar * barsNum * 1.05, 2), 22);
-    prompt = `A ${genre ?? "hip-hop"} ${barsNum}-bar loop${key ? ` in the key of ${key}` : ""}${bpm ? ` at ${bpm} BPM` : ""}. Rhythmic groove, seamlessly loopable, high quality production.`;
+    prompt = `A ${effectiveGenre} ${barsNum}-bar loop${key ? ` in the key of ${key}` : ""}${bpm ? ` at ${bpm} BPM` : ""}. Rhythmic groove, seamlessly loopable, high quality production.`;
   } else {
     return NextResponse.json({ error: "Invalid type. Use oneshot or loop" }, { status: 400 });
   }

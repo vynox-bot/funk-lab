@@ -152,7 +152,22 @@ export function TrackCard({ track }: { track: TrackData }) {
               <span>⭐ {track._count.ratings ?? 0} ratings</span>
             )}
           </div>
-          <span>{new Date(track.createdAt).toLocaleDateString()}</span>
+          <div className="flex items-center gap-2">
+            {track.category === "sample" && track.audioUrl && (
+              <a
+                href={track.audioUrl}
+                download={`${track.title}.mp3`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Download sample"
+                className="text-zinc-500 hover:text-[var(--funk-yellow)] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                ⬇
+              </a>
+            )}
+            <span>{new Date(track.createdAt).toLocaleDateString()}</span>
+          </div>
         </div>
       </div>
     </div>
