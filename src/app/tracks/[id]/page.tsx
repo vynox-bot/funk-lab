@@ -302,7 +302,7 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
               </Link>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {track.audioUrl && (
+              {track.audioUrl && track.category !== "rating" && (
                 <a
                   href={track.audioUrl}
                   download={`${track.title}.mp3`}
