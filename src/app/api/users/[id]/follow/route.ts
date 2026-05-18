@@ -27,6 +27,9 @@ export async function POST(
     await prisma.follow.create({
       data: { followerId: session.user.id, followingId: targetId },
     });
+    await prisma.notification.create({
+      data: { type: "follow", recipientId: targetId, actorId: session.user.id },
+    });
   }
 
   const followerCount = await prisma.follow.count({ where: { followingId: targetId } });

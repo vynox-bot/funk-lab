@@ -27,6 +27,16 @@ export async function POST(req: Request) {
     const category = formData.get("category") as string | null;
     const durationRaw = formData.get("duration");
     const duration = durationRaw ? Math.round(Number(durationRaw)) : null;
+    const tagsRaw = formData.get("tags") as string | null;
+    let tags: string[] = [];
+    if (tagsRaw) {
+      try {
+        const parsed = JSON.parse(tagsRaw);
+        if (Array.isArray(parsed)) {
+          tags = parsed.filter((t): t is string => typeof t === "string" && /^[a-z0-9-]{1,30}$/.test(t)).slice(0, 10);
+        }
+      } catch { /* ignore */ }
+    }
 
     if (!title || !category) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -67,6 +77,7 @@ export async function POST(req: Request) {
         audioUrl,
         imageUrl,
         duration: isNaN(duration!) ? null : duration,
+        tags,
         userId: session.user.id,
       },
       include: { user: { select: { id: true, name: true } } },
@@ -84,6 +95,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const search = searchParams.get("search")?.trim();
+  const tag = searchParams.get("tag")?.trim();
   const sort = searchParams.get("sort") ?? "newest";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const limit = Math.min(20, parseInt(searchParams.get("limit") ?? "12"));
@@ -107,6 +119,7 @@ export async function GET(req: Request) {
     ...(category && ["cover", "sample", "rating"].includes(category) ? { category } : {}),
     ...(userId ? { userId } : {}),
     ...(search ? { title: { contains: search, mode: "insensitive" as const } } : {}),
+    ...(tag ? { tags: { has: tag } } : {}),
   };
 
   const [tracks, total] = await Promise.all([

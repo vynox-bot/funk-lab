@@ -38,7 +38,7 @@ export default function RegisterPage() {
     if (!res.ok) {
       setError(data.error ?? "Registration failed");
     } else {
-      router.push("/login?registered=1");
+      router.push("/login?registered=1&next=/onboarding");
     }
   };
 

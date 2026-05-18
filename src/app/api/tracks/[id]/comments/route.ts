@@ -19,13 +19,23 @@ export async function POST(
 
   const sanitized = content.slice(0, 500).replace(/[<>]/g, "");
 
-  const comment = await prisma.comment.create({
-    data: { content: sanitized, userId: session.user.id, trackId: id, parentId: parentId ?? null },
-    include: {
-      user: { select: { id: true, name: true } },
-      replies: { include: { user: { select: { id: true, name: true } } } },
-    },
-  });
+  const [comment, track] = await prisma.$transaction([
+    prisma.comment.create({
+      data: { content: sanitized, userId: session.user.id, trackId: id, parentId: parentId ?? null },
+      include: {
+        user: { select: { id: true, name: true } },
+        replies: { include: { user: { select: { id: true, name: true } } } },
+      },
+    }),
+    prisma.track.findUnique({ where: { id }, select: { userId: true } }),
+  ]);
+
+  // Notify track owner (not self)
+  if (track && track.userId !== session.user.id) {
+    await prisma.notification.create({
+      data: { type: "comment", recipientId: track.userId, actorId: session.user.id, trackId: id },
+    });
+  }
 
   return NextResponse.json(comment, { status: 201 });
 }

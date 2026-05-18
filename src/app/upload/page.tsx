@@ -44,6 +44,8 @@ export default function UploadPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({ title: "", description: "", category: "" });
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -107,6 +109,7 @@ export default function UploadPage() {
     fd.append("title", form.title.trim());
     fd.append("description", form.description.trim());
     fd.append("category", form.category);
+    if (tags.length > 0) fd.append("tags", JSON.stringify(tags));
     if (audioDuration != null) fd.append("duration", String(audioDuration));
 
     try {
@@ -234,6 +237,49 @@ export default function UploadPage() {
             className="w-full bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:border-[var(--funk-yellow)] transition-colors outline-none resize-none"
             placeholder="Tell the community about it…"
           />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block text-sm font-semibold text-zinc-300 mb-1.5">Tags</label>
+          <div className="flex gap-2 flex-wrap mb-2">
+            {tags.map((tag) => (
+              <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--funk-yellow)]/10 border border-[var(--funk-yellow)]/30 text-[var(--funk-yellow)] rounded-full text-xs font-semibold">
+                #{tag}
+                <button type="button" onClick={() => setTags(tags.filter((t) => t !== tag))} className="text-zinc-500 hover:text-red-400 leading-none">×</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
+                  e.preventDefault();
+                  const t = tagInput.trim();
+                  if (!tags.includes(t) && tags.length < 10) setTags([...tags, t]);
+                  setTagInput("");
+                }
+              }}
+              maxLength={30}
+              placeholder="e.g. funk, lofi, bass… (press Enter)"
+              className="flex-1 bg-[var(--funk-dark)] border border-[var(--funk-border)] rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:border-[var(--funk-yellow)] transition-colors outline-none text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const t = tagInput.trim();
+                if (t && !tags.includes(t) && tags.length < 10) setTags([...tags, t]);
+                setTagInput("");
+              }}
+              className="px-4 py-2 border border-[var(--funk-border)] rounded-xl text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors text-sm"
+            >
+              Add
+            </button>
+          </div>
+          <p className="text-zinc-600 text-xs mt-1">{tags.length}/10 tags · lowercase, letters and hyphens only</p>
         </div>
 
         {error && (

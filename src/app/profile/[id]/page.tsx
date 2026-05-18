@@ -293,15 +293,18 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       </h2>
 
       {tracks.length === 0 ? (
-        <div className="text-center py-16 text-zinc-500">
-          <p className="text-4xl mb-3">🎵</p>
-          <p>No tracks uploaded yet.</p>
+        <div className="text-center py-20">
+          <div className="mx-auto mb-5 w-24 h-24 rounded-full bg-[var(--funk-yellow)]/10 flex items-center justify-center text-5xl">
+            🎵
+          </div>
+          <p className="text-white font-bold text-lg mb-1">{isOwn ? "Nothing dropped yet" : "No uploads yet"}</p>
+          <p className="text-zinc-500 text-sm mb-5">{isOwn ? "Your Lab is empty — time to change that." : "This artist hasn't uploaded anything yet."}</p>
           {isOwn && (
             <Link
               href="/upload"
-              className="mt-4 inline-block text-[var(--funk-yellow)] hover:underline"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--funk-yellow)] text-black font-bold rounded-full hover:brightness-110 transition-all text-sm"
             >
-              Upload your first track →
+              + Drop your first track
             </Link>
           )}
         </div>

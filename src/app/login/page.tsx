@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const registered = searchParams.get("registered") === "1";
+  const next = searchParams.get("next") ?? "/discover";
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,13 +30,18 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password");
     } else {
-      router.push("/discover");
+      router.push(next);
     }
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
+        {registered && (
+          <div className="mb-6 bg-green-900/20 border border-green-700/40 rounded-xl px-4 py-3 text-green-400 text-sm text-center font-semibold">
+            🎉 Account created! Sign in to enter the Lab.
+          </div>
+        )}
         <div className="text-center mb-8">
           <span className="text-4xl">🎵</span>
           <h1 className="text-3xl font-black text-white mt-2">
@@ -105,5 +113,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center"><div className="w-full max-w-md h-96 bg-[var(--funk-card)] rounded-2xl animate-pulse" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

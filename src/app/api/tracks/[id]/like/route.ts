@@ -21,7 +21,16 @@ export async function POST(
     const count = await prisma.like.count({ where: { trackId: id } });
     return NextResponse.json({ liked: false, count });
   } else {
-    await prisma.like.create({ data: { userId: session.user.id, trackId: id } });
+    const [, track] = await prisma.$transaction([
+      prisma.like.create({ data: { userId: session.user.id, trackId: id } }),
+      prisma.track.findUnique({ where: { id }, select: { userId: true } }),
+    ]);
+    // Notify track owner (not self)
+    if (track && track.userId !== session.user.id) {
+      await prisma.notification.create({
+        data: { type: "like", recipientId: track.userId, actorId: session.user.id, trackId: id },
+      });
+    }
     const count = await prisma.like.count({ where: { trackId: id } });
     return NextResponse.json({ liked: true, count });
   }

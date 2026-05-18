@@ -47,6 +47,7 @@ interface Track {
   createdAt: string;
   userId: string;
   aiGenerated: boolean;
+  tags: string[];
   user: { id: string; name: string | null };
   _count: { likes: number; comments: number; ratings: number };
   likes?: { id: string }[];
@@ -349,6 +350,17 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
 
           {track.description && (
             <p className="text-zinc-400 text-sm mt-6 leading-relaxed">{track.description}</p>
+          )}
+
+          {track.tags && track.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              {track.tags.map((tag) => (
+                <Link key={tag} href={`/discover?tag=${tag}`}
+                  className="text-xs px-2.5 py-1 bg-[var(--funk-yellow)]/10 border border-[var(--funk-yellow)]/20 text-[var(--funk-yellow)] rounded-full hover:bg-[var(--funk-yellow)]/20 transition-colors">
+                  #{tag}
+                </Link>
+              ))}
+            </div>
           )}
 
           {/* Likes (cover + sample) */}

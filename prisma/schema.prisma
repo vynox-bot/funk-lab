@@ -28,8 +28,10 @@ model User {
   likes    Like[]
   comments Comment[]
   ratings  Rating[]
-  followers Follow[] @relation("UserFollowers")
-  following Follow[] @relation("UserFollowing")
+  followers              Follow[]       @relation("UserFollowers")
+  following              Follow[]       @relation("UserFollowing")
+  notificationsReceived  Notification[] @relation("NotificationRecipient")
+  notificationsSent      Notification[] @relation("NotificationActor")
 }
 
 model Account {
@@ -79,14 +81,16 @@ model Track {
   plays       Int      @default(0)
   aiGenerated Boolean  @default(false)
   published   Boolean  @default(true)
+  tags        String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes    Like[]
-  comments Comment[]
-  ratings  Rating[]
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes         Like[]
+  comments      Comment[]
+  ratings       Rating[]
+  notifications Notification[]
 
   @@index([userId])
   @@index([category])
@@ -152,4 +156,21 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  read        Boolean  @default(false)
+  type        String   // "like" | "follow" | "comment"
+  recipientId String
+  actorId     String
+  trackId     String?
+
+  recipient User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  track     Track? @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([recipientId, read])
 }

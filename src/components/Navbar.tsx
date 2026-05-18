@@ -2,8 +2,109 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme-context";
+
+type NotifItem = {
+  id: string;
+  type: "like" | "follow" | "comment";
+  read: boolean;
+  createdAt: string;
+  actor: { id: string; name: string | null; image: string | null };
+  track: { id: string; title: string } | null;
+};
+
+function NotifText({ n }: { n: NotifItem }) {
+  const actor = n.actor.name ?? "Someone";
+  if (n.type === "like") return <><span className="font-semibold text-white">{actor}</span> liked your track <span className="text-[var(--funk-yellow)]">{n.track?.title}</span></>;
+  if (n.type === "follow") return <><span className="font-semibold text-white">{actor}</span> started following you</>;
+  return <><span className="font-semibold text-white">{actor}</span> commented on <span className="text-[var(--funk-yellow)]">{n.track?.title}</span></>;
+}
+
+function NotifBell({ userId }: { userId: string }) {
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [notifs, setNotifs] = useState<NotifItem[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const fetchNotifs = async () => {
+    const res = await fetch("/api/notifications");
+    if (!res.ok) return;
+    const data = await res.json();
+    setUnread(data.unreadCount);
+    setNotifs(data.notifications);
+  };
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchNotifs();
+    const t = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(t);
+  }, [userId]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleOpen = async () => {
+    setOpen((v) => !v);
+    if (!open && unread > 0) {
+      await fetch("/api/notifications", { method: "PATCH" });
+      setUnread(0);
+      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={handleOpen}
+        className="relative p-2 text-zinc-400 hover:text-white transition-colors"
+        aria-label="Notifications"
+      >
+        🔔
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 bg-[var(--funk-yellow)] text-black text-[10px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-80 bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl shadow-xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[var(--funk-border)]">
+            <p className="font-bold text-white text-sm">Notifications</p>
+          </div>
+          {notifs.length === 0 ? (
+            <div className="py-10 text-center text-zinc-500">
+              <p className="text-3xl mb-2">🔕</p>
+              <p className="text-sm">Nothing yet — go get some likes!</p>
+            </div>
+          ) : (
+            <ul className="max-h-80 overflow-y-auto divide-y divide-[var(--funk-border)]">
+              {notifs.map((n) => (
+                <li key={n.id} className={`px-4 py-3 text-sm hover:bg-white/5 transition-colors ${!n.read ? "bg-[var(--funk-yellow)]/5" : ""}`}>
+                  <Link
+                    href={n.track ? `/tracks/${n.track.id}` : `/profile/${n.actor.id}`}
+                    onClick={() => setOpen(false)}
+                    className="block"
+                  >
+                    <NotifText n={n} />
+                    <p className="text-zinc-600 text-xs mt-0.5">{new Date(n.createdAt).toLocaleDateString()}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -60,10 +161,21 @@ export function Navbar() {
           🎨 Theme
         </button>
 
+        {/* Search icon */}
+        <Link
+          href="/search"
+          className="hidden md:flex text-zinc-400 hover:text-white transition-colors"
+          aria-label="Search"
+          title="Search"
+        >
+          🔍
+        </Link>
+
         {/* Auth */}
         <div className="hidden md:flex items-center gap-3">
           {session ? (
             <>
+              <NotifBell userId={session.user?.id ?? ""} />
               <Link
                 href="/upload"
                 className="px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all"
@@ -124,6 +236,7 @@ export function Navbar() {
           <Link href="/discover?category=cover" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Artworks</Link>
           <Link href="/discover?category=sample" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Samples</Link>
           <Link href="/discover?category=rating" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Song Ratings</Link>
+          <Link href="/search" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">🔍 Search</Link>
           <button
             onClick={() => { setMenuOpen(false); setPanelOpen(true); }}
             className="text-zinc-400 hover:text-white text-left text-sm flex items-center gap-2"
