@@ -106,6 +106,7 @@ export default function GeneratePage() {
   const [fsQuery, setFsQuery] = useState("");
   const [fsResults, setFsResults] = useState<FreesoundResult[]>([]);
   const [fsSearchStatus, setFsSearchStatus] = useState<Status>("idle");
+  const [fsSearched, setFsSearched] = useState(false);
   const [fsSearchError, setFsSearchError] = useState("");
   const [fsSavingId, setFsSavingId] = useState<string | null>(null);
   const [fsSaved, setFsSaved] = useState<Record<string, string>>({});
@@ -261,6 +262,7 @@ export default function GeneratePage() {
   const handleFsSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setFsSearchStatus("loading");
+    setFsSearched(true);
     setFsSearchError("");
     const res = await fetch(`/api/freesound/search?q=${encodeURIComponent(fsQuery)}`);
     const data = await res.json();
@@ -613,7 +615,7 @@ export default function GeneratePage() {
             </div>
           )}
 
-          {fsResults.length === 0 && fsSearchStatus === "idle" && fsQuery && (
+          {fsResults.length === 0 && fsSearchStatus === "idle" && fsSearched && (
             <p className="text-center text-zinc-500 py-8">No results found for &ldquo;{fsQuery}&rdquo;</p>
           )}
         </div>

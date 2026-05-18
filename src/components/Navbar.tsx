@@ -48,12 +48,6 @@ export function Navbar() {
           >
             Song Ratings
           </Link>
-          <Link
-            href="/generate"
-            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
-          >
-            ✨ Generate
-          </Link>
         </div>
 
         {/* Theme button */}

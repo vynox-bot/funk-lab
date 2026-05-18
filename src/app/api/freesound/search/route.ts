@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [], count: 0 });
   }
 
-  const apiKey = process.env.FREESOUND_API_KEY;
+  const apiKey = process.env.FREESOUND_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json({ error: "Freesound not configured" }, { status: 503 });
   }
