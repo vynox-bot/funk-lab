@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme-context";
+import {
+  Bell, Upload, Sparkles, Search, Palette, Menu, X, Music2, LogOut, User,
+} from "lucide-react";
 
 type NotifItem = {
   id: string;
@@ -66,7 +69,7 @@ function NotifBell({ userId }: { userId: string }) {
         className="relative p-2 text-zinc-400 hover:text-white transition-colors"
         aria-label="Notifications"
       >
-        🔔
+        <Bell className="w-5 h-5" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-[var(--funk-yellow)] text-black text-[10px] font-black rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
             {unread > 9 ? "9+" : unread}
@@ -116,7 +119,7 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <span className="text-2xl">🎵</span>
+          <Music2 className="w-6 h-6 text-[var(--funk-yellow)]" />
           <span className="font-black text-xl tracking-tight">
             <span className="text-[var(--funk-yellow)]">Funk</span>
             <span className="text-white"> Lab</span>
@@ -125,94 +128,55 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link
-            href="/discover"
-            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
-          >
-            Discover
-          </Link>
-          <Link
-            href="/discover?category=cover"
-            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
-          >
-            Artworks
-          </Link>
-          <Link
-            href="/discover?category=sample"
-            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
-          >
-            Samples
-          </Link>
-          <Link
-            href="/discover?category=rating"
-            className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors"
-          >
-            Song Ratings
-          </Link>
+          <Link href="/discover" className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">Discover</Link>
+          <Link href="/discover?category=cover" className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">Artworks</Link>
+          <Link href="/discover?category=sample" className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">Samples</Link>
+          <Link href="/discover?category=rating" className="text-zinc-400 hover:text-[var(--funk-yellow)] transition-colors">Song Ratings</Link>
         </div>
 
-        {/* Theme button */}
-        <button
-          onClick={() => setPanelOpen(true)}
-          title="Customize theme"
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--funk-border)] text-zinc-400 hover:text-white hover:border-[var(--funk-yellow)]/50 transition-all text-xs font-semibold"
-          aria-label="Open theme panel"
-        >
-          🎨 Theme
-        </button>
+        {/* Right side controls */}
+        <div className="hidden md:flex items-center gap-2">
+          {/* Theme */}
+          <button
+            onClick={() => setPanelOpen(true)}
+            title="Customize theme"
+            className="p-2 text-zinc-400 hover:text-white transition-colors"
+            aria-label="Open theme panel"
+          >
+            <Palette className="w-5 h-5" />
+          </button>
 
-        {/* Search icon */}
-        <Link
-          href="/search"
-          className="hidden md:flex text-zinc-400 hover:text-white transition-colors"
-          aria-label="Search"
-          title="Search"
-        >
-          🔍
-        </Link>
+          {/* Search */}
+          <Link href="/search" className="p-2 text-zinc-400 hover:text-white transition-colors" aria-label="Search" title="Search">
+            <Search className="w-5 h-5" />
+          </Link>
 
-        {/* Auth */}
-        <div className="hidden md:flex items-center gap-3">
           {session ? (
             <>
               <NotifBell userId={session.user?.id ?? ""} />
               <Link
                 href="/upload"
-                className="px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all"
               >
-                + Upload
+                <Upload className="w-3.5 h-3.5" /> Upload
               </Link>
               <Link
                 href="/generate"
-                className="px-4 py-2 rounded-full border border-[var(--funk-border)] text-zinc-300 font-bold text-sm hover:text-white hover:border-[var(--funk-yellow)]/50 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[var(--funk-border)] text-zinc-300 font-bold text-sm hover:text-white hover:border-[var(--funk-yellow)]/50 transition-all"
               >
-                ✨ Generate
+                <Sparkles className="w-3.5 h-3.5" /> Generate
               </Link>
-              <Link
-                href={`/profile/${session.user?.id}`}
-                className="text-zinc-400 hover:text-white transition-colors text-sm"
-              >
-                {session.user?.name ?? "Profile"}
+              <Link href={`/profile/${session.user?.id}`} className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors text-sm p-2">
+                <User className="w-4 h-4" />
               </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="text-zinc-500 hover:text-red-400 transition-colors text-sm"
-              >
-                Sign out
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="p-2 text-zinc-500 hover:text-red-400 transition-colors" title="Sign out">
+                <LogOut className="w-4 h-4" />
               </button>
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="text-zinc-400 hover:text-white transition-colors text-sm"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all"
-              >
+              <Link href="/login" className="text-zinc-400 hover:text-white transition-colors text-sm px-3 py-2">Login</Link>
+              <Link href="/register" className="px-4 py-2 rounded-full bg-[var(--funk-yellow)] text-black font-bold text-sm hover:brightness-110 transition-all">
                 Join the Lab
               </Link>
             </>
@@ -221,11 +185,11 @@ export function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden text-zinc-400 hover:text-white"
+          className="md:hidden p-2 text-zinc-400 hover:text-white"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
         >
-          <span className="text-2xl">{menuOpen ? "✕" : "☰"}</span>
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
@@ -236,20 +200,28 @@ export function Navbar() {
           <Link href="/discover?category=cover" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Artworks</Link>
           <Link href="/discover?category=sample" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Samples</Link>
           <Link href="/discover?category=rating" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">Song Ratings</Link>
-          <Link href="/search" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">🔍 Search</Link>
+          <Link href="/search" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-zinc-300 hover:text-[var(--funk-yellow)]">
+            <Search className="w-4 h-4" /> Search
+          </Link>
           <button
             onClick={() => { setMenuOpen(false); setPanelOpen(true); }}
-            className="text-zinc-400 hover:text-white text-left text-sm flex items-center gap-2"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white text-left text-sm"
           >
-            🎨 Customize Theme
+            <Palette className="w-4 h-4" /> Customize Theme
           </button>
           <hr className="border-[var(--funk-border)]" />
           {session ? (
             <>
-              <Link href="/upload" onClick={() => setMenuOpen(false)} className="text-[var(--funk-yellow)] font-bold">+ Upload</Link>
-              <Link href="/generate" onClick={() => setMenuOpen(false)} className="text-zinc-300 hover:text-[var(--funk-yellow)]">✨ Generate</Link>
+              <Link href="/upload" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-[var(--funk-yellow)] font-bold">
+                <Upload className="w-4 h-4" /> Upload
+              </Link>
+              <Link href="/generate" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-zinc-300 hover:text-[var(--funk-yellow)]">
+                <Sparkles className="w-4 h-4" /> Generate
+              </Link>
               <Link href={`/profile/${session.user?.id}`} onClick={() => setMenuOpen(false)} className="text-zinc-300">{session.user?.name ?? "Profile"}</Link>
-              <button onClick={() => { setMenuOpen(false); signOut({ callbackUrl: "/" }); }} className="text-left text-red-400">Sign out</button>
+              <button onClick={() => { setMenuOpen(false); signOut({ callbackUrl: "/" }); }} className="flex items-center gap-2 text-left text-red-400">
+                <LogOut className="w-4 h-4" /> Sign out
+              </button>
             </>
           ) : (
             <>

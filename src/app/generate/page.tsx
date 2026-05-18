@@ -109,7 +109,7 @@ export default function GeneratePage() {
   const [fsSearched, setFsSearched] = useState(false);
   const [fsSearchError, setFsSearchError] = useState("");
   const [fsSavingId, setFsSavingId] = useState<string | null>(null);
-  const [fsSaved, setFsSaved] = useState<Record<string, string>>({});
+  const [fsDownloaded, setFsDownloaded] = useState<Set<string>>(new Set());
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -291,26 +291,20 @@ export default function GeneratePage() {
     }
   };
 
-  const handleFsSave = async (result: FreesoundResult) => {
+  const handleFsDownload = async (result: FreesoundResult) => {
     const sid = String(result.id);
     setFsSavingId(sid);
-    const res = await fetch("/api/freesound/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        previewUrl: result.previews?.["preview-hq-mp3"],
-        soundName: result.name,
-        username: result.username,
-        license: result.license,
-        freesoundId: result.id,
-        title: result.name,
-      }),
-    });
-    const data = await res.json();
+    const previewUrl = result.previews?.["preview-hq-mp3"];
+    if (!previewUrl) { setFsSavingId(null); return; }
+    const safe = result.name.replace(/[^a-z0-9._\-\s]/gi, "_").slice(0, 80);
+    const a = document.createElement("a");
+    a.href = `/api/freesound/download?url=${encodeURIComponent(previewUrl)}&filename=${encodeURIComponent(safe)}`;
+    a.download = `${safe}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setFsDownloaded((prev) => new Set(prev).add(sid));
     setFsSavingId(null);
-    if (res.ok) {
-      setFsSaved((prev) => ({ ...prev, [sid]: data.track.id }));
-    }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -533,7 +527,7 @@ export default function GeneratePage() {
               <a href="https://freesound.org" target="_blank" rel="noopener noreferrer" className="text-[var(--funk-yellow)] hover:underline">
                 freesound.org
               </a>
-              . Save any sound directly to your Funk Lab profile.
+              . Preview and download sounds directly to your device.
             </p>
             <form onSubmit={handleFsSearch} className="flex gap-3">
               <input
@@ -562,7 +556,7 @@ export default function GeneratePage() {
                 const sid = String(r.id);
                 const isPlaying = playingId === sid;
                 const isSaving = fsSavingId === sid;
-                const savedTrackId = fsSaved[sid];
+                const downloaded = fsDownloaded.has(sid);
                 return (
                   <div key={r.id} className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-xl p-4 flex items-center gap-4">
                     {/* Preview button */}
@@ -592,23 +586,18 @@ export default function GeneratePage() {
                       </p>
                     </div>
 
-                    {/* Save button */}
-                    {savedTrackId ? (
-                      <Link
-                        href={`/tracks/${savedTrackId}`}
-                        className="px-3 py-1.5 text-xs font-bold text-[var(--funk-yellow)] border border-[var(--funk-yellow)]/40 rounded-lg hover:bg-[var(--funk-yellow)]/10 transition-colors flex-shrink-0"
-                      >
-                        View ↗
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => handleFsSave(r)}
-                        disabled={isSaving}
-                        className="px-3 py-1.5 text-xs font-bold bg-[var(--funk-yellow)] text-black rounded-lg hover:brightness-110 transition-all disabled:opacity-50 flex-shrink-0"
-                      >
-                        {isSaving ? "⚙️" : "💾 Save"}
-                      </button>
-                    )}
+                    {/* Download button */}
+                    <button
+                      onClick={() => handleFsDownload(r)}
+                      disabled={isSaving}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-50 flex-shrink-0 ${
+                        downloaded
+                          ? "border border-green-600/40 text-green-400"
+                          : "bg-[var(--funk-yellow)] text-black hover:brightness-110"
+                      }`}
+                    >
+                      {isSaving ? "…" : downloaded ? "✓ Downloaded" : "↓ Download"}
+                    </button>
                   </div>
                 );
               })}
