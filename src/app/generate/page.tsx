@@ -394,13 +394,12 @@ export default function GeneratePage() {
       {mainTab === "sample" && (
         <div className="bg-[var(--funk-card)] border border-[var(--funk-border)] rounded-2xl p-6">
           <h2 className="font-black text-white text-lg mb-1">Generate Sample</h2>
-          <p className="text-zinc-500 text-xs mb-4">Oneshot & Loop powered by ElevenLabs · Vocal powered by MiniMax Music 2.6</p>
+          <p className="text-zinc-500 text-xs mb-4">Powered by ElevenLabs Sound Effects</p>
 
           {/* Sample sub-tabs */}
           <div className="flex gap-2 mb-4 p-1 bg-[var(--funk-dark)] rounded-xl">
             {sampleTabBtn("oneshot", "Oneshot")}
             {sampleTabBtn("loop", "Loop")}
-            {sampleTabBtn("vocal", "Vocal 🎤")}
           </div>
 
           {/* Visibility toggle */}
@@ -519,60 +518,6 @@ export default function GeneratePage() {
             </form>
           )}
 
-          {/* Vocal */}
-          {sampleTab === "vocal" && (
-            <div className="flex flex-col gap-4">
-              {/* Beta banner */}
-              <div className="flex items-start gap-2 bg-purple-500/10 border border-purple-500/30 rounded-xl px-4 py-3">
-                <span className="text-lg leading-none mt-0.5">🎤</span>
-                <p className="text-purple-300 text-xs leading-relaxed">
-                  <strong>AI Song Generation</strong> — Powered by MiniMax Music 2.6. Generates a full song with real vocals and instrumentation from your lyrics. Takes 30–90 seconds.
-                </p>
-              </div>
-              <form onSubmit={handleVocal} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label>Title</Label>
-                  <input type="text" value={vocTitle} onChange={(e) => setVocTitle(e.target.value)} maxLength={100} placeholder="e.g. Midnight Verse" className={inputClass} required />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>Lyrics <span className="normal-case text-zinc-600 font-normal">(supports [Verse] / [Chorus] / [Bridge] tags)</span></Label>
-                  <textarea value={vocLyrics} onChange={(e) => setVocLyrics(e.target.value)} rows={5} maxLength={3500} placeholder="Paste your lyrics here…" className={`${inputClass} resize-none`} required />
-                </div>
-                <div className="flex gap-3">
-                  {!vocCustomStyle && (
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      <Label>Genre</Label>
-                      <select value={vocGenre} onChange={(e) => setVocGenre(e.target.value)} className={selectClass}>
-                        {GENRES.map((g) => <option key={g}>{g}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <Label>Pitch</Label>
-                    <select value={vocPitch} onChange={(e) => setVocPitch(e.target.value)} className={selectClass}>
-                      {PITCHES.map((p) => <option key={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <Label>Tempo</Label>
-                    <select value={vocTempo} onChange={(e) => setVocTempo(e.target.value)} className={selectClass}>
-                      {TEMPOS.map((t) => <option key={t}>{t}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>BPM <span className="normal-case text-zinc-600 font-normal">(optional)</span></Label>
-                  <input type="number" value={vocBpm} onChange={(e) => setVocBpm(e.target.value)} min={40} max={300} placeholder="e.g. 120" className={inputClass} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label>Custom Style <span className="normal-case text-zinc-600 font-normal">(optional — overrides dropdowns)</span></Label>
-                  <input type="text" value={vocCustomStyle} onChange={(e) => setVocCustomStyle(e.target.value)} maxLength={200} placeholder="e.g. dreamy lo-fi R&B with reverb and slow swing" className={inputClass} />
-                </div>
-                {vocError && <p className="text-red-400 text-xs">{vocError}</p>}
-                <GenBtn loading={vocStatus === "loading" || vocStatus === "polling"}>✨ Generate Vocal Song</GenBtn>
-              </form>
-            </div>
-          )}
         </div>
       )}
 
