@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const session = await auth();
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -19,7 +20,7 @@ export async function GET(
       instagram: true,
       image: true,
       createdAt: true,
-      _count: { select: { tracks: true, likes: true } },
+      _count: { select: { tracks: true, likes: true, followers: true, following: true } },
     },
   });
 
@@ -27,7 +28,15 @@ export async function GET(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  return NextResponse.json(user);
+  let isFollowing = false;
+  if (session?.user?.id && session.user.id !== id) {
+    const follow = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: session.user.id, followingId: id } },
+    });
+    isFollowing = !!follow;
+  }
+
+  return NextResponse.json({ ...user, isFollowing });
 }
 
 export async function PATCH(

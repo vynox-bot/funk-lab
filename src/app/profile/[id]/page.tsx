@@ -14,7 +14,8 @@ interface UserProfile {
   instagram: string | null;
   image: string | null;
   createdAt: string;
-  _count: { tracks: number; likes: number };
+  isFollowing: boolean;
+  _count: { tracks: number; likes: number; followers: number; following: number };
 }
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +28,9 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     params.then(({ id }) => setUserId(id));
@@ -41,6 +45,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       setProfile(user);
       setEditForm({ name: user.name ?? "", bio: user.bio ?? "", website: user.website ?? "", twitter: user.twitter ?? "", instagram: user.instagram ?? "", image: user.image ?? "" });
       setTracks(trackData.tracks);
+      setFollowing(user.isFollowing ?? false);
+      setFollowerCount(user._count.followers ?? 0);
       setLoading(false);
     });
   }, [userId]);
@@ -77,6 +83,18 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   };
 
   const isOwn = session?.user?.id === userId;
+
+  const handleFollow = async () => {
+    if (!session || !userId) return;
+    setFollowLoading(true);
+    const res = await fetch(`/api/users/${userId}/follow`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      setFollowing(data.following);
+      setFollowerCount(data.followerCount);
+    }
+    setFollowLoading(false);
+  };
 
   if (loading) {
     return (
@@ -203,6 +221,19 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                       Edit
                     </button>
                   )}
+                  {!isOwn && session && (
+                    <button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      className={`text-xs font-bold px-3 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                        following
+                          ? "border-[var(--funk-border)] text-zinc-400 hover:text-red-400 hover:border-red-500/30"
+                          : "bg-[var(--funk-yellow)] text-black border-transparent hover:brightness-110"
+                      }`}
+                    >
+                      {followLoading ? "…" : following ? "Following" : "Follow"}
+                    </button>
+                  )}
                 </div>
                 {profile.bio && (
                   <p className="text-zinc-400 text-sm mt-2 leading-relaxed">{profile.bio}</p>
@@ -231,10 +262,18 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             )}
 
             {/* Stats */}
-            <div className="flex gap-6 mt-4 text-sm">
+            <div className="flex gap-6 mt-4 text-sm flex-wrap">
               <div>
                 <span className="font-black text-white">{profile._count.tracks}</span>
                 <span className="text-zinc-500 ml-1">uploads</span>
+              </div>
+              <div>
+                <span className="font-black text-white">{followerCount}</span>
+                <span className="text-zinc-500 ml-1">followers</span>
+              </div>
+              <div>
+                <span className="font-black text-white">{profile._count.following}</span>
+                <span className="text-zinc-500 ml-1">following</span>
               </div>
               <div>
                 <span className="font-black text-white">{profile._count.likes}</span>

@@ -4,6 +4,7 @@ import { TrackCard, type TrackData } from "@/components/TrackCard";
 
 async function getRecentTracks() {
   const tracks = await prisma.track.findMany({
+    where: { published: true },
     include: {
       user: { select: { id: true, name: true } },
       _count: { select: { likes: true, comments: true, ratings: true } },

@@ -302,6 +302,15 @@ export default function TrackPage({ params }: { params: Promise<{ id: string }> 
               </Link>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {track.audioUrl && (
+                <a
+                  href={track.audioUrl}
+                  download={`${track.title}.mp3`}
+                  className="text-xs border border-[var(--funk-border)] text-zinc-400 hover:text-white hover:border-zinc-500 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  ↓ Download
+                </a>
+              )}
               <button
                 onClick={handleShare}
                 className="text-xs border border-[var(--funk-border)] text-zinc-400 hover:text-white hover:border-zinc-500 px-3 py-1.5 rounded-lg transition-colors"
